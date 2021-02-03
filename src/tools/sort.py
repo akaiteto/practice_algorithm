@@ -139,6 +139,34 @@ def sort_merge(arr):
 
     return arr_target
 
+def sort_quick(arr):
+    """
+    Summary:基準値よりも大きいグループ・小さいグループに分ける操作を繰り返す。
+    """
+    def devide_BigSmall(arr,idx_Kijun):
+        threshold = arr[idx_Kijun]
+        big_group = []
+        small_group = []
+        for idx in range(len(arr)):
+            if idx == idx_Kijun:continue
+            if threshold > arr[idx]:
+                small_group.append(arr[idx])
+            else:
+                big_group.append(arr[idx])
+        idx_Kijun_small = int(len(small_group) / 2)
+        if len(small_group)!=0:
+            small_group = devide_BigSmall(small_group, idx_Kijun_small)
+        if len(big_group)!=0:
+            idx_Kijun_big = int(len(big_group) / 2)
+            big_group = devide_BigSmall(big_group, idx_Kijun_big)
+        return small_group + [threshold] + big_group
+
+    arr_target=copy.copy(arr)
+    idx_Kijun = int(len(arr_target)/2)
+    arr_output = devide_BigSmall(arr_target,idx_Kijun)
+
+    return arr_output
+
 if __name__ == '__main__':
     lst_org = [17, 11, 12, 5, 14, 9, 6, 16, 4, 10, 1, 19, 13, 15, 0, 2, 3, 18, 7, 8,21]
     print(lst_org,"\r\n")
@@ -148,6 +176,7 @@ if __name__ == '__main__':
     lst_sorted_she = sort_shell(lst_org,4)
     lst_sorted_heap = sort_heap(lst_org)
     lst_sorted_merge = sort_merge(lst_org)
+    lst_sorted_quick = sort_quick(lst_org)
 
     print(lst_sorted_bub)
     print(lst_sorted_sel)
@@ -155,3 +184,4 @@ if __name__ == '__main__':
     print(lst_sorted_she)
     print(lst_sorted_heap,"exist bug")
     print(lst_sorted_merge)
+    print(lst_sorted_quick)
