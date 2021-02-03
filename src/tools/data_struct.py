@@ -102,6 +102,7 @@ class Tree:
                         a = a - 1
                         k = a
         return N
+
 if __name__ == '__main__':
     lst_org = [4,1,6,2,9,7,3,8]
     tree = Tree(lst_org)
