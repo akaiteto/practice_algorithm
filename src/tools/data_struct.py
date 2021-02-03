@@ -7,48 +7,78 @@ class Tree:
             self.left = None
             self.right = None
 
-    def print(self, tree):
+    def print(self):
         cnt = 0
-        for node in tree:
-            print("idx",cnt," ele:",node.element, " left:",node.left, " right:", node.right)
+        for node in self.tree:
+            print("idx",cnt," ele:",node.element," left:",node.left, " right:", node.right)
             cnt +=1
+
+    def change_parent_child(self,parent, child,tree):
+        if (child== 2 * parent + 1):
+            # left child
+            tree[child].element, tree[parent].element = tree[parent].element, tree[child].element
+            tree[parent].left = tree[child].element
+        elif (child== 2 * parent+2):
+            # right child
+            tree[child].element, tree[parent].element = tree[parent].element, tree[child].element
+            tree[parent].right = tree[child].element
+        else:
+            assert False ,"想定外エラー"
+
+        # set parent
+        if parent != 0:
+            if (parent % 2) == 0:
+                parent_parent = int(parent / 2) - 1
+            else:
+                parent_parent = int(parent / 2)
+        else :
+            return
+        if (parent == 2 * parent_parent + 1):
+            # left child
+            tree[parent_parent].left = tree[parent].element
+        elif (parent == 2 * parent_parent + 2):
+            # right child
+            tree[parent_parent].right = tree[parent].element
+        else:
+            assert False, "想定外エラー"
 
     def __init__(self, arr):
         N = []
         for idx in range(len(arr)):
             tmpNode = self.Node(arr[idx])
-            if 2 * idx + 1 < len(arr):tmpNode.left = arr[2 * idx + 1]
-            if 2 * idx + 2 < len(arr):tmpNode.right = arr[2 * idx + 2]
             N.append(tmpNode)
+        for idx in range(len(N)):
+            idx_left = 2 * idx + 1
+            idx_right = 2 * idx + 2
+            # set left-right child
+            if 2 * idx + 1 < len(arr):
+                N[idx].left = arr[idx_left]
+            if 2 * idx + 2 < len(arr):
+                N[idx].right = arr[idx_right]
 
         length = len(arr)-1
         k = int((length )/2)
         a = k
-        while (a!=0):
-            print("\r\n\r\n\r\n")
+
+        while (a>=0):
             j = 2 * k + 1
             if j + 1 < len(N):
                 if N[k].element > N[j].element and N[k].element > N[j + 1].element:
                     a = a - 1
                     k = a
                 elif N[j].element > N[k].element and N[j].element > N[j + 1].element:
-                    N[j].element, N[k].element = N[k].element, N[j].element
+                    self.change_parent_child(parent=k, child=j,tree=N)
                     k = j
                 elif N[j + 1].element > N[k].element and N[j + 1].element > N[j].element:
-                    N[j + 1].element, N[k].element = N[k].element, N[j + 1].element
+                    self.change_parent_child(parent=k, child=j+1,tree=N)
                     k = j + 1
             else:
                 if N[k].element > N[j].element:
                     a = a - 1
                     k = a
                 elif N[j].element > N[k].element:
-                    N[j].element, N[k].element = N[k].element, N[j].element
-                    N[j].element, N[k].element = N[k].element, N[j].element
-
-                    self.print(N)
-                    exit()
+                    self.change_parent_child(parent=k, child=j,tree=N)
                     k = j
-
 
             if j + 1 < len(N):
                 if (N[j + 1].left == None and N[j + 1].right == None):
@@ -58,10 +88,9 @@ class Tree:
                 if (N[j].left == None and N[j].right == None):
                     a = a - 1
                     k = a
-            print("a=", a, " k=", k, " j=", j, " len = ", len(N))
-            self.print(N)
-
+        self.tree = N
 
 if __name__ == '__main__':
     lst_org = [4,1,6,2,9,7,3,8]
     tree = Tree(lst_org)
+    tree.print()
