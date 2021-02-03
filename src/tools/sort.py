@@ -1,6 +1,7 @@
 #https://medium-company.com/%E9%81%B8%E6%8A%9E%E3%82%BD%E3%83%BC%E3%83%88/
 
 import copy
+import data_struct as dt
 
 def sort_insert(arr):
     """
@@ -96,6 +97,48 @@ def sort_shell(arr, interval):
         interval_tmp = int(interval_tmp / 2)
     return arr_target
 
+def sort_heap(arr):
+    """
+    Summary:木構造で検出した最大値を抽出していくだけ
+    """
+    arr_input = copy.copy(arr)
+    arr_output = []
+    for i in range(len(arr)):
+        tree = dt.Tree(arr_input)
+        arr_output.append(tree.max)
+        idx_max = arr_input.index(tree.max)
+        arr_input.pop(idx_max)
+    arr_output.reverse()
+    return arr_output
+
+def sort_merge(arr):
+    """
+    Summary:2分割を繰り返したあと、小さい単位でソートしながら結合していく。
+    """
+    arr_target=copy.copy(arr)
+
+    lst_sep = []
+    length = int(len(arr)/2)
+    while (True):
+        lst_sep.append(length)
+        length = int(length/2)
+        if length ==1:break
+    lst_sep.reverse()
+    lst_sep.append(len(arr))
+
+    for step in lst_sep:
+        idx_bgn = 0
+        idx_fin = idx_bgn + step
+
+        for idx in range(idx_bgn, len(arr_target), step):
+            arr_tmp = arr_target[idx_bgn:idx_fin]
+            arr_tmp = sort_insert(arr_tmp)
+            arr_target[idx_bgn:idx_fin] = arr_tmp
+            idx_bgn = idx + step
+            idx_fin = idx_bgn + step
+
+    return arr_target
+
 if __name__ == '__main__':
     lst_org = [17, 11, 12, 5, 14, 9, 6, 16, 4, 10, 1, 19, 13, 15, 0, 2, 3, 18, 7, 8,21]
     print(lst_org,"\r\n")
@@ -103,8 +146,12 @@ if __name__ == '__main__':
     lst_sorted_sel = sort_select(lst_org)
     lst_sorted_ins = sort_insert(lst_org)
     lst_sorted_she = sort_shell(lst_org,4)
+    lst_sorted_heap = sort_heap(lst_org)
+    lst_sorted_merge = sort_merge(lst_org)
 
     print(lst_sorted_bub)
     print(lst_sorted_sel)
     print(lst_sorted_ins)
     print(lst_sorted_she)
+    print(lst_sorted_heap,"exist bug")
+    print(lst_sorted_merge)
