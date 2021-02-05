@@ -28,8 +28,8 @@ class bag_ctl():
         # マッチング
         if p_match == "glue":
             self.match = mt.match_glue()
-        elif p_pose == "o3d_graph":
-            self.pose = mt.match_o3d_posegraph.BaseCPD()
+        elif p_match == "o3d_graph":
+            self.pose = mt.match_o3d_posegraph()
         else:
             assert False,"マッチングアルゴリズムが未選択"
 

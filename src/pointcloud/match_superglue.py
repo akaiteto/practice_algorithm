@@ -5,7 +5,7 @@ from otherlib.SuperGluePretrainedNetwork.models.utils import (frame2tensor)
 import open3d as o3d
 import numpy as np
 import torch
-
+import utils_pcl as util_3d
 
 torch.set_grad_enabled(False)
 class match_glue:
@@ -42,29 +42,21 @@ class match_glue:
 
 class match_o3d_posegraph:
 
-    def __init__(self, something):
+    def __init__(self):
         self.pose_graph = o3d.pipelines.registration.PoseGraph()
         self.trans_odometry = np.identity(4)
         self.pose_graph.nodes.append(o3d.pipelines.registration.PoseGraphNode(self.trans_odometry))
 
-    def extract_matching(self,image0, image1):
-        image0 = cv2.cvtColor(image0, cv2.COLOR_BGR2GRAY)
-        image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+    def extract_matching(self,image0, image1,dicMatch):
+        depth0 = dicMatch["depth0"]
+        depth1 = dicMatch["depth1"]
+        color0 = dicMatch["color0"]
+        color1 = dicMatch["color1"]
 
-        image0, inp0 = self.read_image(image0, self.device)
-        image1, inp1 = self.read_image(image1, self.device)
+        rgbd0 = util_3d.read_rgbd(color=color0,depth=depth0)
+        rgbd1 = util_3d.read_rgbd(color=color1,depth=depth1)
 
-        pred = self.matching({'image0': inp0, 'image1': inp1})
-        pred = {k: v[0].cpu().numpy() for k, v in pred.items()}
-        kpts0, kpts1 = pred['keypoints0'], pred['keypoints1']
-        matches, conf = pred['matches0'], pred['matching_scores0']
-
-        # Keep the matching keypoints.
-        valid = matches > -1
-        mkpts0 = kpts0[valid]
-        mkpts1 = kpts1[matches[valid]]
-        mconf = conf[valid]
-
+        exit()
         return mkpts0, mkpts1
 
 

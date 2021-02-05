@@ -6,9 +6,7 @@ import open3d as o3d
 import copy
 import cv2
 
-def read_rgbd_image(color_file, depth_file, max_depth=3.0):
-    color = o3d.io.read_image(color_file)
-    depth = o3d.io.read_image(depth_file)
+def read_rgbd(color, depth, max_depth=3.0):
     rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
         color,
         depth,
