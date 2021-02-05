@@ -2,10 +2,12 @@ import numpy as np
 import  cv2
 
 class BaseOpenCV():
+
     @staticmethod
     def estimate_pose(kpts0, kpts1, K0, K1, conf=0.99999):
         if len(kpts0) < 5:
             return None
+
         thresh = 1
         f_mean = np.mean([K0[0, 0], K1[1, 1], K0[0, 0], K1[1, 1]])
         norm_thresh = thresh / f_mean

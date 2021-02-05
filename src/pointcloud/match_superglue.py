@@ -1,3 +1,4 @@
+import cv2
 from otherlib.SuperGluePretrainedNetwork.models.matching import Matching
 from otherlib.SuperGluePretrainedNetwork.models.utils import (frame2tensor)
 
@@ -12,6 +13,9 @@ class match_glue:
         self.matching = Matching(self.config).eval().to("cpu")
 
     def extract_matching(self,image0, image1):
+        image0 = cv2.cvtColor(image0, cv2.COLOR_BGR2GRAY)
+        image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
+
         image0, inp0 = self.read_image(image0, self.device)
         image1, inp1 = self.read_image(image1, self.device)
 

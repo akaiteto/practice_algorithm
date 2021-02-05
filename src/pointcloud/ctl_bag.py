@@ -6,6 +6,20 @@ import match_superglue as mt
 import pose_estimate as ps
 
 class bag_ctl():
+    def setAlgorithm(self,param):
+        p_match = param["match"]
+        p_pose = param["est_pose"]
+        # マッチング
+        if p_match == "glue":
+            self.match = mt.match_glue()
+        else:
+            assert False,"カメラ姿勢推定アルゴリズムが未選択"
+
+        # カメラ姿勢推定
+        if p_pose == "opencv":
+            self.pose = ps.BaseOpenCV()
+        else:
+            assert False,"カメラ姿勢推定アルゴリズムが未選択"
 
 
     def get_filter(self):
@@ -26,6 +40,11 @@ class bag_ctl():
         return dic
 
     def extractFrameFromBag(self,bagfilepath, pathCSV, pathImg):
+        #アルゴリズムセット
+        dic = {"match":"glue","est_pose":"opencv"}
+        self.setAlgorithm(dic)
+
+        #realsense準備
         config = rs.config()
         rs.config.enable_device_from_file(config, bagfilepath)
         config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
@@ -42,6 +61,12 @@ class bag_ctl():
         # デバイス情報取得
         dic_dev = self.get_devinfo(pipeline)
         color_intrinsics = dic_dev["color_intrinsics"]
+        fx = color_intrinsics.fx
+        fy = color_intrinsics.fy
+        ppx = color_intrinsics.ppx
+        ppy = color_intrinsics.ppy
+        K =np.array([[fx,0,ppx],[0,fy,ppy],[0,0,1]])
+
         # フィルターインスタンス取得
         dic_filter = self.get_filter()
         align = dic_filter["align"]
@@ -52,11 +77,6 @@ class bag_ctl():
         cur_image = None
 
         try:
-            # マッチングクラス
-            match = mt.match_glue()
-            # カメラ姿勢クラス
-            pose = ps.BaseOpenCV()
-
             while True:
                 try:
                     frames = pipeline.wait_for_frames()
@@ -81,55 +101,22 @@ class bag_ctl():
                     fpscnt = 0
                     desc = "\\" + str(frameNum)
 
+                    #フレーム保存
                     np.savetxt(pathCSV + desc + ".csv", depth_numpy, delimiter=',', fmt='%10f')
-                    cv2.imwrite(pathImg + desc + '.png', color_numpy, [cv2.IMWRITE_PNG_COMPRESSION, 0])
-
-                    fx = color_intrinsics.fx
-                    fy = color_intrinsics.fy
-                    ppx = color_intrinsics.ppx
-                    ppy = color_intrinsics.ppy
-
+                    cv2.imwrite(pathImg + desc + ".png", cv2.cvtColor(color_numpy, cv2.COLOR_BGR2RGB), [cv2.IMWRITE_PNG_COMPRESSION, 0])
                     if bfr_image is not None:
-                        device = "cpu"
-                        cur_image = cv2.cvtColor(cur_image, cv2.COLOR_BGR2GRAY)
-                        bfr_image = cv2.cvtColor(bfr_image, cv2.COLOR_BGR2GRAY)
-                        kpts0, kpts1 = match.extract_matching(bfr_image, cur_image)
+                        kpts0, kpts1 = self.match.extract_matching(bfr_image, cur_image)
+                        ret = self.pose.estimate_pose(kpts0, kpts1, K, K)
 
-                        print(kpts0.shape, kpts1.shape)
-                        pose
-                        exit()
+                        if ret is None:
+                            err_t, err_R = np.inf, np.inf
+                            print("カメラ姿勢推定失敗",err_t, err_R)
+                            continue
+                        else:
+                            R, t, inliers = ret
+                            print(R,t)
+                            exit()
 
-                        # # bfr_image = cv2.imread(in1, cv2.IMREAD_GRAYSCALE)
-                        # # cur_image = cv2.imread(in0, cv2.IMREAD_GRAYSCALE)
-                        #
-                        # device = "cpu"
-                        # rot0 = 0
-                        # # h=bfr_image.shape[0]
-                        # # w=bfr_image.shape[1]
-                        # h = 640
-                        # w = 480
-                        #
-                        # image0, inp0 = mt.read_image(bfr_image, device)
-                        # image1, inp1 = mt.read_image(cur_image, device)
-                        # mt.matching(inp0, inp1)
-                        # exit()
-                        #
-                        # in1 = r"D:\test\git\practice_algorithm\src\pointcloud\otherlib\SuperGluePretrainedNetwork\assets\scannet_sample_images\scene0726_00_frame-000135.jpg"
-                        # in0 = r"D:\test\git\practice_algorithm\src\pointcloud\otherlib\SuperGluePretrainedNetwork\assets\scannet_sample_images\scene0726_00_frame-000210.jpg"
-                        #
-                        # print(in0, device, [h, w], rot0, False)
-                        #
-                        # image0, inp0, scales0 = mt.read_image(cur_image, "cpu")
-                        # image1, inp1, scales1 = mt.read_image(bfr_image, "cpu")
-                        # mt.matching(inp0, inp1)
-                        #
-                        # exit()
-                        #
-                        # image0, inp0 = mt.read_image(bfr_image, device)
-                        # image1, inp1 = mt.read_image(cur_image, device)
-                        #
-                        # mt.matching(inp0, inp1)
-                        # exit()
                     bfr_image = cur_image
 
             print("finish")
@@ -140,5 +127,5 @@ class bag_ctl():
 if __name__ == '__main__':
     bag_ctl = bag_ctl()
     bag_ctl.extractFrameFromBag(bagfilepath=r"C:\Users\dobashi\Documents\20210204_152209.bag",
-                        pathCSV = r"D:\test\新しいフォルダー\depth",
-                        pathImg = r"D:\test\新しいフォルダー\img")
+                        pathCSV = r"D:\test\aaaaaa\depth",
+                        pathImg = r"D:\test\aaaaaa\img")
