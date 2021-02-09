@@ -12,6 +12,125 @@ class PoseEstimation():
     fy = None
     ppx = None
     ppy = None
+    class Common():
+        # https://github.com/tronphan/3D-Rendering/blob/51f5fbdd1d88b8fd1befd631b8f8f2cdd23822cc/Reconstruction/opencv_pose_estimation.py
+        def estimate_3D_transform(self,input_xyz_s, input_xyz_t):
+            # compute H
+            xyz_s = copy.copy(input_xyz_s)
+            xyz_t = copy.copy(input_xyz_t)
+            n_points = xyz_s.shape[1]
+            mean_s = np.mean(xyz_s, axis=1)
+            mean_t = np.mean(xyz_t, axis=1)
+            mean_s.shape = (3, 1)
+            mean_t.shape = (3, 1)
+            xyz_diff_s = xyz_s - np.tile(mean_s, [1, n_points])
+            xyz_diff_t = xyz_t - np.tile(mean_t, [1, n_points])
+            H = np.matmul(xyz_diff_s, xyz_diff_t.transpose())
+            # solve system
+            U, s, V = np.linalg.svd(H)
+            R_approx = np.matmul(V.transpose(), U.transpose())
+            if np.linalg.det(R_approx) < 0.0:
+                det = np.linalg.det(np.matmul(U, V))
+                D = np.identity(3)
+                D[2, 2] = det
+                R_approx = np.matmul(U, np.matmul(D, V))
+            t_approx = mean_t - np.matmul(R_approx, mean_s)
+            return R_approx, t_approx
+
+        # https://github.com/tronphan/3D-Rendering/blob/51f5fbdd1d88b8fd1befd631b8f8f2cdd23822cc/Reconstruction/opencv_pose_estimation.py
+        def estimate_3D_transform_RANSAC(self,pts_xyz_s, pts_xyz_t):
+            max_iter = 1000
+            max_distance = 0.05
+            n_sample = 5
+            n_points = pts_xyz_s.shape[1]
+            Transform_good = np.identity(4)
+            max_inlier = n_sample
+            inlier_vec_good = []
+            success = False
+
+            if n_points < n_sample:
+                return False, np.identity(4), []
+
+            for i in range(max_iter):
+
+                # sampling
+                rand_idx = np.random.randint(n_points, size=n_sample)
+                sample_xyz_s = pts_xyz_s[:, rand_idx]
+                sample_xyz_t = pts_xyz_t[:, rand_idx]
+                R_approx, t_approx = self.estimate_3D_transform(sample_xyz_s, sample_xyz_t)
+
+                # evaluation
+                diff_mat = pts_xyz_t - (np.matmul(R_approx, pts_xyz_s) +
+                                        np.tile(t_approx, [1, n_points]))
+                diff = [np.linalg.norm(diff_mat[:, i]) for i in range(n_points)]
+                n_inlier = len([1 for diff_iter in diff if diff_iter < max_distance])
+
+                # note: diag(R_approx) > 0 prevents ankward transformation between
+                # RGBD pair of relatively small amount of baseline.
+                if (n_inlier > max_inlier) and (np.linalg.det(R_approx) != 0.0) and \
+                        (R_approx[0, 0] > 0 and R_approx[1, 1] > 0 and R_approx[2, 2] > 0):
+                    Transform_good[:3, :3] = R_approx
+                    Transform_good[:3, 3] = [t_approx[0], t_approx[1], t_approx[2]]
+                    max_inlier = n_inlier
+                    inlier_vec = [id_iter for diff_iter, id_iter \
+                                  in zip(diff, range(n_points)) \
+                                  if diff_iter < max_distance]
+                    inlier_vec_good = inlier_vec
+                    success = True
+
+            return success, Transform_good, inlier_vec_good
+
+
+        def refinePose(self,pcl_target, P_target,img_main,K):
+            f = K[0][0]
+            ppw = K[0][2]
+            pph = K[1][2]
+
+            pts_Main = []
+            pts_Target = []
+
+            target_height = img_main.shape[0]
+            target_width = img_main.shape[1]
+            cnt=0
+            for idx in range(len(pcl_target.points)):
+                pt = np.array(pcl_target.points[idx])
+                pt = np.array([pt[0],pt[1],pt[2],1]).reshape(4,1)
+                w_Main, h_Main = util_3d.TransformPointC2I(pt, K)
+                if target_height < h_Main or 0 > h_Main:
+                    continue
+                if target_width < w_Main or 0 > w_Main:
+                    continue
+
+                pt_trans=np.dot(P_target,pt)
+                w_Target, h_Target = util_3d.TransformPointC2I(pt_trans, K)
+                if target_height < h_Target or 0 > h_Target:
+                    continue
+                if target_width < w_Target or 0 > w_Target:
+                    continue
+                cnt+=1
+                pts_Main.append([w_Main,h_Main])
+                pts_Target.append([w_Target,h_Target])
+
+            pts_Main=np.array(pts_Main)
+            pts_Target=np.array(pts_Target)
+            pts_Main = np.int32(pts_Main + 0.5)
+            pts_Target = np.int32(pts_Target + 0.5)
+
+            [E, mask] = cv2.findEssentialMat(pts_Main,
+                                             pts_Target,
+                                             focal=f,
+                                             pp=(ppw, pph),
+                                             method=cv2.RANSAC,
+                                             prob=0.999,
+                                             threshold=1.0)
+
+            if mask is None:
+                print("false")
+
+            cnt_success = np.count_nonzero(mask != 0)
+            print(cnt_success/len(mask))
+            return cnt_success/len(mask)
+
 
     class BaseOpenCV():
         def estimate_pose(self,kpts0, kpts1, dic=None, conf=0.99999):
