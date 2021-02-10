@@ -57,8 +57,38 @@ class match_o3d_posegraph:
         rgbd1 = util_3d.read_rgbd(color=color1,depth=depth1)
 
         exit()
-        return mkpts0, mkpts1
 
+class match_opencv:
+    def extract_matching(self,image0, image1):
+        return self.extract_matching_ORB_BFMatch( image0, image1)
+
+    def extract_matching_ORB_BFMatch(self,image0, image1):
+        color_cv_s = image0
+        color_cv_t = image1
+        orb = cv2.ORB_create(scaleFactor=1.2,
+                             nlevels=8,
+                             edgeThreshold=31,
+                             firstLevel=0,
+                             WTA_K=2,
+                             scoreType=cv2.ORB_HARRIS_SCORE,
+                             nfeatures=100,
+                             patchSize=31)  # to save time
+        [kp_s, des_s] = orb.detectAndCompute(color_cv_s, None)
+        [kp_t, des_t] = orb.detectAndCompute(color_cv_t, None)
+        if len(kp_s) is 0 or len(kp_t) is 0:
+            return [],[]
+
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matches = bf.match(des_s, des_t)
+
+        pts_s = []
+        pts_t = []
+        for match in matches:
+            pts_t.append(kp_t[match.trainIdx].pt)
+            pts_s.append(kp_s[match.queryIdx].pt)
+        pts_s = np.asarray(pts_s)
+        pts_t = np.asarray(pts_t)
+        return pts_s, pts_t
 
 if __name__ == '__main__':
     input1 = r"D:\test\git\practice_algorithm\src\otherlib\SuperGluePretrainedNetwork\assets\scannet_sample_images\scene0726_00_frame-000135.jpg"

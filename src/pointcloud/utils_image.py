@@ -1,5 +1,16 @@
 import cv2
 import numpy as np
+import random
+
+def getMatchImage(srcImg,dstImg,srcPts,dstPts):
+    im_concat = cv2.hconcat([srcImg,dstImg])
+    height=srcImg.shape[0]
+    width=srcImg.shape[1]
+    for idx in range(len(srcPts)):
+        spt_w,spt_h = int(srcPts[idx][0]),int(srcPts[idx][1])
+        tpt_w,tpt_h = int(dstPts[idx][0]),int(dstPts[idx][1])
+        cv2.line(im_concat, (spt_w,spt_h),(tpt_w+width, tpt_h),(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), thickness=10, lineType=cv2.LINE_4)
+    return im_concat
 
 def DiffImage(imgM, imgT):
     imgM = cv2.cvtColor(imgM, cv2.COLOR_BGR2GRAY)

@@ -20,6 +20,14 @@ def TransformPointC2I(XYZ_C, K):
     h = float(float(XYZ_C[1] * K[1][1]) / d) + K[1][2]
     return w, h
 
+def TransformPointI2C(pixel2D, K):
+    depthZ = pixel2D[2]
+    X = float(float(pixel2D[0] - K[0][2]) * depthZ / K[0][0])
+    Y = float(float(pixel2D[1] - K[1][2]) * depthZ / K[1][1])
+    Z = depthZ
+    CameraPos3D = np.array([[X], [Y], [Z]])
+    return CameraPos3D
+
 def ConvRT2TransXYZW(R, T):
     trans = np.array([[R[0][0], R[0][1], R[0][2], T[0][0]],
                       [R[1][0], R[1][1], R[1][2], T[1][0]],
@@ -95,14 +103,22 @@ def ApplyPmat4x4(pcl,P):
     pcl_tmp =copy.copy(pcl)
     return pcl_tmp.transform(P)
 
-def generate_pointcloud(fW,fH,centerW,centerH,scalingFactor,rgb, depth, ply_file):
+def generate_pointcloud_fromXYZpoints(pts):
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(pts)
+    return pcd
+
+def generate_pointcloud(fW,fH,centerW,centerH,rgb, depth, ply_file,scalingFactor=1.0):
     if rgb.shape[0] != depth.shape[0] or rgb.shape[1] != depth.shape[1]:
         raise Exception("Color and depth image do not have the same resolution.")
     points = []
     for w in range(rgb.shape[1]):
         for h in range(rgb.shape[0]):
             color = rgb[h][w]
-            Z = depth[h][w] / scalingFactor
+            if scalingFactor!=1.0:
+                Z = depth[h][w] / scalingFactor
+            else:
+                Z = depth[h][w]
             if Z == 0: continue
             X = (w - centerW) * Z / fW
             Y = (h - centerH) * Z / fH

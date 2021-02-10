@@ -21,7 +21,7 @@ class Evaluate():
             return ratioM
 
     class maskfindEmat():
-        def evaluate(self,pcl_target, P_target,img_main,K):
+        def Evaluate(self,pcl_target, P_target,img_main,K):
             '''
             essential行列より評価
             '''
