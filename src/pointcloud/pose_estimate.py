@@ -233,8 +233,6 @@ class PoseEstimation():
             util_3d.write_point_cloud("pclM.ply",pclM)
             pclT = util_3d.generate_pointcloud_fromXYZpoints(pts3D_Target)
             util_3d.write_point_cloud("pclT.ply",pclT)
-            if len(pts3D_Target) < 100:
-                return False,None,None
 
             nplst = np.array(pts3D_Main).shape
             pts3D_Main = np.array(pts3D_Main).reshape(nplst[0], nplst[1])

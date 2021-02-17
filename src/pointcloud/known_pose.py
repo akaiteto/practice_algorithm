@@ -142,6 +142,18 @@ class known_pose():
 
 
 if __name__ == '__main__':
+    import cv2
+    import numpy as np
+    from PIL import Image
+
+    im_cv = cv2.imread(r'D:\test\L177\output\viewconv\integrate_OtheView.png')
+    im_rgb = cv2.cvtColor(im_cv, cv2.COLOR_BGR2RGB)
+    cv2.imwrite('integrate_OtheView.jpg', im_rgb)
+    im_rgb = cv2.cvtColor(im_cv, cv2.COLOR_BGR2RGB)
+    im_cv = cv2.imread(r'D:\test\L177\output\viewconv\Original.png')
+    cv2.imwrite('Original.jpg', im_rgb)
+    exit()
+
     dicView = {}
     K=np.array([[913.49,0,639.614],[0,913.49,372.977],[0,0,1]])
     pathImg = r"D:\test\L177\img"
